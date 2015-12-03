@@ -40,13 +40,14 @@
       (assoc ant :color Color/GREEN))))
 
 (defn aggravate-ant [ant]
-  (let [filter-ants (filter (fn [a]
+  ;let defines a local variable called close-ants
+  (let [close-ants (filter (fn [a]                         ;give filter a function, we havec this ant and we need to figure out how many ants are close to it and that's why we need to filter (give a condition and say only give me the ants that match that condition
                               (and (<= (Math/abs (- (:x ant) (:x a))) 10)
                                    (<= (Math/abs (- (:y ant) (:y a))) 10)))
-                            (derggef ants))]
-    (if (> (count filter-ants) 1)
-      (assoc ant :color Color/RED)
-      (assoc ant :color Color/BLACK))))
+                            (deref ants))]                  ;the collection that we are passing into filter
+    (if (= (count close-ants) 1)                            ;if count = 1, return GREEN, if not = 1 then return red.
+      (assoc ant :color Color/GREEN)
+      (assoc ant :color Color/RED))))
 
 (defn move-ant [ant]                                          ;we only need to write this function to move a single ant
   ;artificially slow this down so we can use parralelism (sleeping for 2 milliseconds) each ant is sleeping 2ms so it's really sleeping 200ms per frame
@@ -84,7 +85,7 @@
                   (.setText fps-label (str (fps now)))      ;str is converting it into a string
                   (reset! last-timestamp now)
                   ;pmap below boosts performance (that we slowed down with Thread/sleep 2 above) using parallelism.
-                  (reset! ants (map aggravate-ant (map move-ant (deref ants)))) ;derefing ants so we are pulling them out of the atom, applying move and that result we are storing in the ants atom and we are doing it before draw ants is called
+                  (reset! ants (doall (map aggravate-ant (map move-ant (deref ants))))) ;derefing ants so we are pulling them out of the atom, applying move and that result we are storing in the ants atom and we are doing it before draw ants is called
                   (draw-ants context)))]
     (reset! ants (create-ants))
     (doto stage
