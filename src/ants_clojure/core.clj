@@ -19,15 +19,38 @@
 (defn create-ants []
   (for [i (range 0 ant-count)]                              ; we are not going to use the i variable but we had to assign it because it wants us to assign a value
     {:x (rand-int width)                                    ; x value here, y value below.
-     :y (rand-int height)}))
+     :y (rand-int height)
+     :color Color/GREEN}))
 
 (defn random-step []                                        ; we want this to go left or right, up or down 1 pixel so we need it to return -1 or 1
   (- (* 2 (rand)) 1)                                        ;rand * 2 and then subtract 1 from it
   )
 
+#_(defn distance [[ant] [a]]
+  (Math/sqrt
+    (+ (Math/pow (- :x ant :x a) 2)
+       (Math/pow (- :y ant :y a) 2))))
+
+#_(defn aggravate-ant [ant]
+  (let [filter-ants (filter (fn [a]
+                              (if (<= (distance [ant] [a]) 10)))
+                            (deref ants))]
+    (if (> (count filter-ants) 1)
+      (assoc ant :color Color/RED)
+      (assoc ant :color Color/GREEN))))
+
+(defn aggravate-ant [ant]
+  (let [filter-ants (filter (fn [a]
+                              (and (<= (Math/abs (- (:x ant) (:x a))) 10)
+                                   (<= (Math/abs (- (:y ant) (:y a))) 10)))
+                            (derggef ants))]
+    (if (> (count filter-ants) 1)
+      (assoc ant :color Color/RED)
+      (assoc ant :color Color/BLACK))))
+
 (defn move-ant [ant]                                          ;we only need to write this function to move a single ant
   ;artificially slow this down so we can use parralelism (sleeping for 2 milliseconds) each ant is sleeping 2ms so it's really sleeping 200ms per frame
-  (Thread/sleep 2)
+  ;(Thread/sleep 1)
   ;assoc let's you take a map, like ant
   (assoc ant :x (+ (random-step) (:x ant))                  ;setting new x and y
              :y (+ (random-step) (:y ant))))
@@ -40,7 +63,7 @@
   (doseq [ant (deref ants)]
     ;set the color of the and and the draw it
     ;imported class Color "javafx.scene.paint Color"
-    (.setFill context Color/BLACK)
+    (.setFill context (:color ant))
     ;5 pixels by 5 pixels, relatively small
     (.fillOval context (:x ant) (:y ant) 5 5)))
 
@@ -61,7 +84,7 @@
                   (.setText fps-label (str (fps now)))      ;str is converting it into a string
                   (reset! last-timestamp now)
                   ;pmap below boosts performance (that we slowed down with Thread/sleep 2 above) using parallelism.
-                  (reset! ants (pmap move-ant (deref ants))) ;derefing ants so we are pulling them out of the atom, applying move and that result we are storing in the ants atom and we are doing it before draw ants is called
+                  (reset! ants (map aggravate-ant (map move-ant (deref ants)))) ;derefing ants so we are pulling them out of the atom, applying move and that result we are storing in the ants atom and we are doing it before draw ants is called
                   (draw-ants context)))]
     (reset! ants (create-ants))
     (doto stage
